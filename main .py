@@ -1,6 +1,10 @@
+import os
 import openpyxl
 from kivy.lang import Builder
 from kivymd.app import MDApp
+from kivy.utils import platform
+from android.storage import app_storage_path
+from android.permissions import request_permissions, Permission
 
 
 class MyApp(MDApp):
@@ -21,8 +25,21 @@ class MyApp(MDApp):
             "calibrada": self.root.ids.calibrada.text
         }
 
+        # Define the directory and file path
+        if platform == 'android':
+            from android.storage import primary_external_storage_path
+            dir_path = os.path.join(primary_external_storage_path(), 'dados')
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_path = os.path.join(dir_path, 'dados.xlsx')
+        else:
+            dir_path = os.path.join(os.getcwd(), 'dados')
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+            file_path = os.path.join(dir_path, 'dados.xlsx')
+
         try:
-            wb = openpyxl.load_workbook("dados/dados.xlsx")
+            wb = openpyxl.load_workbook(file_path)
             ws = wb.active
             if ws.max_row == 1:
                 ws.append(["Equipamento", "CS", "Data", "Código Pneu",
@@ -34,9 +51,14 @@ class MyApp(MDApp):
                       "Sulco1", "Sulco2", "Sulco3", "Medida", "Calibrada"])
 
         ws.append([dados["equipamento"], dados["cs"], dados["data"], dados["codigo_pneu"],
-                  dados["sulco1"], dados["sulco2"], dados["sulco3"], dados["medida"], dados["calibrada"]])
-        wb.save("dados.xlsx")
+                   dados["sulco1"], dados["sulco2"], dados["sulco3"], dados["medida"], dados["calibrada"]])
+        wb.save(file_path)
         print("Informações salvas com sucesso!")
+
+    def on_start(self):
+        if platform == 'android':
+            request_permissions(
+                [Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE])
 
 
 MyApp().run()
